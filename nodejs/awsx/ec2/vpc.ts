@@ -327,7 +327,7 @@ export class Vpc extends pulumi.ComponentResource<VpcData> {
     /** @internal */
     public async initializeVpcArgs(name: string, args: x.ec2.VpcArgs, opts: pulumi.ComponentResourceOptions): Promise<VpcData> {
         const provider = Vpc.getProvider(opts);
-        const availabilityZones = await getAvailabilityZones(opts.parent, provider, args.numberOfAvailabilityZones);
+        const availabilityZones = await getAvailabilityZones(opts.parent, provider, args.requestedAvailabilityZones ?? args.numberOfAvailabilityZones);
 
         return new VpcData(name, this, {
             ...args,
@@ -504,23 +504,30 @@ utils.Capture(Vpc.prototype).initializeVpcArgs.doNotCapture = true;
 async function getAvailabilityZones(
         parent: pulumi.Resource | undefined,
         provider: pulumi.ProviderResource | undefined,
-        requestedCount: "all" | number | undefined): Promise<topology.AvailabilityZoneDescription[]> {
+        requestedZones: VpcArgs["requestedAvailabilityZones"] = 2): Promise<topology.AvailabilityZoneDescription[]> {
 
     const result = await aws.getAvailabilityZones(/*args:*/ undefined, { provider, async: true });
     if (result.names.length !== result.zoneIds.length) {
         throw new pulumi.ResourceError("Availability zones for region had mismatched names and ids.", parent);
     }
 
-    const descriptions: topology.AvailabilityZoneDescription[] = [];
-    for (let i = 0, n = result.names.length; i < n; i++) {
-        descriptions.push({ name: result.names[i], id: result.zoneIds[i] });
+
+    const descriptions = result.names.map((name, idx) => ({ name, id: result.zoneIds[idx] }) );
+
+    if (Array.isArray(requestedZones) || typeof requestedZones === "object" ) {
+        return new Promise((resolve, reject) => {
+            pulumi.Output.create(requestedZones).apply(requestedZones => {
+                const mappedZones = descriptions.filter(zone => requestedZones.includes(zone.name));
+                mappedZones.length === requestedZones.length ?
+                    resolve(mappedZones) :
+                    reject(new pulumi.ResourceError("Availability zones did not match requested zones", parent));
+            });
+        });
+    }
+    else {
+        return descriptions.slice(0, requestedZones === "all" ? descriptions.length : requestedZones);
     }
 
-    const count =
-        typeof requestedCount === "number" ? requestedCount :
-        requestedCount === "all" ? descriptions.length : 2;
-
-    return descriptions.slice(0, count);
 }
 
 function getExistingSubnets(vpcData: VpcData, vpc: Vpc, vpcName: string, type: VpcSubnetType, inputs: pulumi.Input<string>[] = []) {
@@ -702,10 +709,15 @@ export interface VpcArgs {
     subnets?: VpcSubnetArgs[];
 
     /**
-     * The maximum number of availability zones to use in the current region.  Defaults to `2` if
-     * unspecified.  Use `"all"` to use all the availability zones in the current region.
+     * The names of the availability zones to use in the current region. Defaults to `2` if
+     * unspecified. Use `"all"` to use all the availability zones in the current region.
      */
-    numberOfAvailabilityZones?: number | "all";
+    requestedAvailabilityZones?: number | "all" | [string, ...string[]] | pulumi.Input<string[]>;
+
+    /**
+     * @deprecated Use `requestedAvailabilityZones`
+     */
+    numberOfAvailabilityZones?: VpcArgs["requestedAvailabilityZones"];
 
     /**
      * The max number of NAT gateways to create if there are any private subnets created.  A NAT

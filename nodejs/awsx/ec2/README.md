@@ -33,13 +33,13 @@ const vpc = new awsx.ec2.Vpc("custom", {
 });
 ```
 
-This range will then be partitioned accordingly into the VPC depending on the other arguments provided.  The additional arguments that affect this partitioning are `subnets` and `numberOfAvailabilityZones`.
+This range will then be partitioned accordingly into the VPC depending on the other arguments provided.  The additional arguments that affect this partitioning are `subnets` and `requestedAvailabilityZones`.
 
 ### Availability Zones
 
 Availability Zones are distinct locations that are engineered to be isolated from failures in other Availability Zones. By launching instances in separate Availability Zones, you can protect your applications from the failure of a single location
 
-If not provided `numberOfAvailabilityZones` will default to `2`, but a different value can be specified like so if appropriate for your region:
+Not providing a list of zones for `requestedAvailabilityZones` will default to `2`, but a different value can be specified like so if appropriate for your region:
 
 ```ts
 import * as aws from "@pulumi/aws";
@@ -47,7 +47,7 @@ import * as awsx from "@pulumi/awsx";
 
 const vpc = new awsx.ec2.Vpc("custom", {
    cidrBlock: "10.0.0.0/16",
-   numberOfAvailabilityZones: 3,
+   requestedAvailabilityZones: 3,
 });
 ```
 
@@ -77,7 +77,7 @@ import * as awsx from "@pulumi/awsx";
 
 const vpc = new awsx.ec2.Vpc("custom", {
    cidrBlock: "10.0.0.0/16",
-   numberOfAvailabilityZones: 3,
+   requestedAvailabilityZones: 3,
    subnets: [{ type: "public" }, { type: "private" }, { type: isolated }],
 });
 ```
@@ -90,7 +90,7 @@ import * as awsx from "@pulumi/awsx";
 
 const vpc = new awsx.ec2.Vpc("custom", {
    cidrBlock: "10.0.0.0/16",
-   numberOfAvailabilityZones: 3,
+   requestedAvailabilityZones: 3,
    subnets: [
      { type: "public" },
      { type: "private" },
@@ -113,7 +113,7 @@ import * as awsx from "@pulumi/awsx";
 
 const vpc = new awsx.ec2.Vpc("custom", {
    cidrBlock: "10.0.0.0/16",
-   numberOfAvailabilityZones: 3,
+   requestedAvailabilityZones: 3,
    numberOfNatGateways: 1,
 });
 ```

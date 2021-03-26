@@ -15,6 +15,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
+import * as random from "@pulumi/random";
 
 const config = new pulumi.Config("aws");
 const providerOpts = { provider: new aws.Provider("prov", { region: <aws.Region>config.require("envRegion") }) };
@@ -52,5 +53,23 @@ const vpcWithLocations = new awsx.ec2.Vpc("custom6", {
         { type: "private", location: "10.0.1.0/24" },
         { type: "isolated", name: "db", location: "10.0.2.0/24" },
         { type: "isolated", name: "redis", location: "10.0.3.0/24" },
+    ],
+}, providerOpts);
+
+
+
+const allZones =   aws.getAvailabilityZones(undefined, { provider: providerOpts.provider, async: true }).then(allZones => allZones.names)
+const selectedZones = new random.RandomShuffle("custom7_az", {
+    inputs: allZones,
+    resultCount: allZones.then(z => z.length / 2)
+}).results;
+
+const vpcWithSpecificZones = new awsx.ec2.Vpc("custom7", {
+    requestedAvailabilityZones: selectedZones,
+    subnets: [
+        { type: "public" },
+        { type: "private" },
+        { type: "isolated", name: "db" },
+        { type: "isolated", name: "redis" },
     ],
 }, providerOpts);
