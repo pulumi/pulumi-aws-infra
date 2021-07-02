@@ -267,10 +267,10 @@ export class Vpc extends pulumi.ComponentResource<VpcData> {
 
     public readonly vpc: pulumi.Output<aws.ec2.Vpc>;
 
-    constructor(name: string, args: VpcArgs | ExistingVpcArgs | ExistingVpcIdArgs, opts?: pulumi.ComponentResourceOptions);
+    constructor(name: string, args?: VpcArgs | ExistingVpcArgs | ExistingVpcIdArgs, opts?: pulumi.ComponentResourceOptions);
     /** @internal */
     constructor(name: string, args: DefaultVpcArgs, opts?: pulumi.ComponentResourceOptions);
-    constructor(name: string, args: VpcArgs | ExistingVpcArgs | ExistingVpcIdArgs | DefaultVpcArgs, opts: pulumi.ComponentResourceOptions = {}) {
+    constructor(name: string, args: VpcArgs | ExistingVpcArgs | ExistingVpcIdArgs | DefaultVpcArgs = {}, opts: pulumi.ComponentResourceOptions = {}) {
         super("awsx:x:ec2:Vpc", name, { name, args, opts }, opts);
 
         const data = this.getData();
